@@ -24,4 +24,4 @@ web = "requirements/web.txt"
 ```
 
 ### ⚠ This project makes no attempt to validate your requirements files.
-**The only thing it does is include every non empty line from your requirements files which doesn't start with `#`, `-r` and `--`.**
+**The only thing it does is include every non empty line from your requirements files which doesn't start with `#`, `-r` or `--`.**
