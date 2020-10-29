@@ -25,14 +25,14 @@ repos:
     rev: v2.7.2
     hooks:
       - id: pyupgrade
-        name: Rewrite Code to be Py3.6+
-        args: [--py36-plus]
+        name: Rewrite Code to be Py3.5+
+        args: [--py3-plus]
 
   - repo: https://github.com/asottile/reorder_python_imports
     rev: v2.3.5
     hooks:
       - id: reorder-python-imports
-        args: [--py36-plus]
+        args: [--py3-plus]
 
   - repo: https://github.com/psf/black
     rev: 20.8b1
@@ -63,6 +63,20 @@ repos:
   # <---- Code Analysis --------------------------------------------------------------------------
 
   # ----- Static Requirements ------------------------------------------------------------------->
+  - repo: https://github.com/saltstack/pip-tools-compile-impersonate
+    rev: master
+    hooks:
+      - id: pip-tools-compile
+        alias: compile-3.5-test-requirements
+        name: Py3.5 Test Requirements
+        files: ^requirements/tests.in$
+        pass_filenames: false
+        args:
+          - -v
+          - --py-version=3.5
+          - --platform=linux
+          - requirements/tests.in
+
   - repo: https://github.com/saltstack/pip-tools-compile-impersonate
     rev: master
     hooks:

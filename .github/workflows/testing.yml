@@ -30,6 +30,7 @@ jobs:
       max-parallel: 4
       matrix:
         python-version:
+          - 3.5
           - 3.6
           - 3.7
           - 3.8
@@ -146,6 +147,7 @@ jobs:
       max-parallel: 3
       matrix:
         python-version:
+          - 3.5
           - 3.6
           - 3.7
           - 3.8
@@ -266,6 +268,7 @@ jobs:
       max-parallel: 3
       matrix:
         python-version:
+          - 3.5
           - 3.6
           - 3.7
           - 3.8

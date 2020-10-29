@@ -36,7 +36,7 @@ def test_build_package(project, build):
         # Now the docs extras
         installed_packages = venv.get_installed_packages()
         assert "docs-extras-require-pkg" not in installed_packages
-        ret = venv.install(f"{package}[docs]")
+        ret = venv.install("{}[docs]".format(package))
         assert ret.exitcode == 0, ret
         installed_packages = venv.get_installed_packages()
         assert "docs-extras-require-pkg" in installed_packages
@@ -44,7 +44,7 @@ def test_build_package(project, build):
         # Now the cli extras
         installed_packages = venv.get_installed_packages()
         assert "cli-extras-require-pkg" not in installed_packages
-        ret = venv.install(f"{package}[cli]")
+        ret = venv.install("{}[cli]".format(package))
         installed_packages = venv.get_installed_packages()
         assert ret.exitcode == 0, ret
-        assert "docs-extras-require-pkg" in installed_packages
+        assert "cli-extras-require-pkg" in installed_packages

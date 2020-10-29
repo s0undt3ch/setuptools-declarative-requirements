@@ -78,14 +78,14 @@ class VirtualEnv:
         return self
 
     def __exit__(self, *args):
-        shutil.rmtree(self.venv_dir)
+        shutil.rmtree(str(self.venv_dir))
 
     def install(self, *args, **kwargs):
         return self.run(str(self.venv_python), "-m", "pip", "install", *args, **kwargs)
 
     def run(self, *args, **kwargs):
         check = kwargs.pop("check", True)
-        kwargs.setdefault("cwd", self.venv_dir)
+        kwargs.setdefault("cwd", str(self.venv_dir))
         kwargs.setdefault("stdout", subprocess.PIPE)
         kwargs.setdefault("stderr", subprocess.PIPE)
         kwargs.setdefault("universal_newlines", True),
@@ -143,8 +143,10 @@ class VirtualEnv:
                 else:
                     bin_dir = os.path.join(sys.real_prefix, "bin")
                     raise AssertionError(
-                        f"Couldn't find a python binary name under '{bin_dir}' "
-                        f"matching: {python_binary_names}"
+                        "Couldn't find a python binary name under '{bin_dir}' "
+                        "matching: {python_binary_names}".format(
+                            bin_dir=bin_dir, python_binary_names=python_binary_names
+                        )
                     )
                 return python
         except AttributeError:
@@ -176,15 +178,19 @@ class CommandResult:
     def __str__(self):
         message = self.__class__.__name__
         if self.cmdline:
-            message += f"\n Command Line: {self.cmdline}"
+            message += "\n Command Line: {}".format(self.cmdline)
         if self.exitcode is not None:
-            message += f"\n Exitcode: {self.exitcode}"
+            message += "\n Exitcode: {}".format(self.exitcode)
         if self.stdout or self.stderr:
             message += "\n Process Output:"
         if self.stdout:
-            message += f"\n   >>>>> STDOUT >>>>>\n{self.stdout}\n   <<<<< STDOUT <<<<<"
+            message += "\n   >>>>> STDOUT >>>>>\n{}\n   <<<<< STDOUT <<<<<".format(
+                self.stdout
+            )
         if self.stderr:
-            message += f"\n   >>>>> STDERR >>>>>\n{self.stderr}\n   <<<<< STDERR <<<<<"
+            message += "\n   >>>>> STDERR >>>>>\n{}\n   <<<<< STDERR <<<<<".format(
+                self.stderr
+            )
         return message + "\n"
 
 
@@ -208,18 +214,22 @@ class CommandFailure(Exception):  # pragma: no cover
         message = self.message
         append_new_line = False
         if self.cmdline:
-            message += f"\n Command Line: {self.cmdline}"
+            message += "\n Command Line: {}".format(self.cmdline)
             append_new_line = True
         if self.exitcode is not None:
             append_new_line = True
-            message += f"\n Exitcode: {self.exitcode}"
+            message += "\n Exitcode: {}".format(self.exitcode)
         if self.stdout or self.stderr:
             append_new_line = True
             message += "\n Process Output:"
         if self.stdout:
-            message += f"\n   >>>>> STDOUT >>>>>\n{self.stdout}\n   <<<<< STDOUT <<<<<"
+            message += "\n   >>>>> STDOUT >>>>>\n{}\n   <<<<< STDOUT <<<<<".format(
+                self.stdout
+            )
         if self.stderr:
-            message += f"\n   >>>>> STDERR >>>>>\n{self.stderr}\n   <<<<< STDERR <<<<<"
+            message += "\n   >>>>> STDERR >>>>>\n{}\n   <<<<< STDERR <<<<<".format(
+                self.stderr
+            )
         if self.exc:
             append_new_line = True
             message += "\n{}".format(
@@ -286,25 +296,29 @@ class Project:
         if install_requires is None:
             install_requires = ""
         else:
-            install_requires = f"\n        install_requires = {install_requires}"
+            install_requires = "\n        install_requires = {}".format(
+                install_requires
+            )
         if setup_requires is None:
             setup_requires = ""
         else:
-            setup_requires = f"\n        setup_requires = {setup_requires}"
+            setup_requires = "\n        setup_requires = {}".format(setup_requires)
         if tests_require is None:
             tests_require = ""
         else:
-            tests_require = f"\n        tests_require = {tests_require}"
+            tests_require = "\n        tests_require = {}".format(tests_require)
         if extras_require is None:
             extras_require = ""
         else:
             _extras_require = ""
             for key, value in extras_require.items():
-                _extras_require += f"""          {key} = {value}\n"""
+                _extras_require += """          {} = {}\n""".format(key, value)
             if _extras_require:
-                _extras_require = f"""\n        extras_require =\n{_extras_require}\n"""
+                _extras_require = """\n        extras_require =\n{}\n""".format(
+                    _extras_require
+                )
             extras_require = _extras_require
-        setup_cfg = f"""
+        setup_cfg = """
         [metadata]
         name = test-project
         description = Test project for file support for setuptools declarative setup.cfg
@@ -320,6 +334,7 @@ class Project:
             Programming Language :: Cython
             Programming Language :: Python :: 3
             Programming Language :: Python :: 3 :: Only
+            Programming Language :: Python :: 3.5
             Programming Language :: Python :: 3.6
             Programming Language :: Python :: 3.7
             Programming Language :: Python :: 3.8
@@ -333,13 +348,18 @@ class Project:
         zip_safe = False
         include_package_data = True
         packages = find:
-        python_requires = >= 3.6
+        python_requires = >= 3.5
         install_requires =
           setuptools
           setuptools_declarative_requirements
 
         [requirements-files]{setup_requires}{install_requires}{tests_require}{extras_require}
-        """
+        """.format(
+            setup_requires=setup_requires,
+            install_requires=install_requires,
+            tests_require=tests_require,
+            extras_require=extras_require,
+        )
         self.write_file("setup.cfg", contents=setup_cfg)
         setup = """
         import setuptools
@@ -347,7 +367,7 @@ class Project:
             setuptools.setup()
         """
         self.write_file("setup.py", contents=setup)
-        pyproject = f"""
+        pyproject = """
         [build-system]
         requires = [
             "setuptools>=42",
@@ -355,7 +375,9 @@ class Project:
             "setuptools_declarative_requirements=={__version__}"
         ]
         build-backend = "setuptools.build_meta"
-        """
+        """.format(
+            __version__=__version__
+        )
         self.write_file("pyproject.toml", contents=pyproject)
         manifest = """
         include requirements/*.txt
@@ -400,9 +422,9 @@ def local_pypi_repo_path(tmp_path_factory):
 @pytest.fixture(scope="session")
 def build_test_pkgs(tmp_path_factory, local_pypi_repo_path):
     # Build this project's whell
-    subprocess.run([sys.executable, "setup.py", "bdist_wheel"], cwd=CODE_ROOT)
+    subprocess.run([sys.executable, "setup.py", "bdist_wheel"], cwd=str(CODE_ROOT))
     for pkg in CODE_ROOT.joinpath("dist").glob("*.*"):
-        shutil.copyfile(pkg, local_pypi_repo_path.joinpath(pkg.name))
+        shutil.copyfile(str(pkg), str(local_pypi_repo_path.joinpath(pkg.name)))
 
     # Build the test project's wheel's
     setup_py = textwrap.dedent(
@@ -442,18 +464,20 @@ def build_test_pkgs(tmp_path_factory, local_pypi_repo_path):
         "cli-extras-require",
         "tests-require",
     ):
-        src = tmp_path_factory.mktemp(f"{name}-pkg")
+        src = tmp_path_factory.mktemp("{}-pkg".format(name))
         src.joinpath("setup.py").write_text(setup_py)
         src.joinpath("pyproject.toml").write_text(pyproject_toml)
-        src.joinpath("setup.cfg").write_text(setup_cfg_tpl.format(name=f"{name}-pkg"))
-        pkg = src / f"{name.replace('-', '_')}_pkg"
+        src.joinpath("setup.cfg").write_text(
+            setup_cfg_tpl.format(name="{}-pkg".format(name))
+        )
+        pkg = src / "{}_pkg".format(name.replace("-", "_"))
         pkg.mkdir()
         pkg.joinpath("__init__.py").touch()
         subprocess.run(
             [sys.executable, "setup.py", "bdist_wheel"], cwd=str(src), check=True
         )
         for pkg in src.joinpath("dist").glob("*.*"):
-            shutil.copyfile(pkg, local_pypi_repo_path.joinpath(pkg.name))
+            shutil.copyfile(str(pkg), str(local_pypi_repo_path.joinpath(pkg.name)))
 
 
 @pytest.fixture(scope="session")

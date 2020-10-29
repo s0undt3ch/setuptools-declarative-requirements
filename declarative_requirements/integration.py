@@ -20,7 +20,7 @@ def _parse_requirements_file(requirements_file):
     log.info(
         "Requirements parsed from '%s': %s",
         requirements_file,
-        ", ".join(f"'{req}'" for req in parsed_requirements),
+        ", ".join("'{}'".format(req) for req in parsed_requirements),
     )
     return parsed_requirements
 
@@ -59,7 +59,7 @@ def load_declarative_requirements_files(func, dist):
                     "The config key '%s' under 'requirements-files' is not "
                     "supported. Allowed config keys: %s",
                     cfgname,
-                    ", ".join(f"'{key}'" for key in supported_config_keys),
+                    ", ".join("'{}'".format(key) for key in supported_config_keys),
                 )
                 sys.exit(1)
 

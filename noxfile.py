@@ -13,7 +13,7 @@ nox.options.reuse_existing_virtualenvs = True
 nox.options.error_on_missing_interpreters = False
 
 # Python versions to test against
-PYTHON_VERSIONS = ("3", "3.6", "3.7", "3.8", "3.9")
+PYTHON_VERSIONS = ("3", "3.5", "3.6", "3.7", "3.8", "3.9")
 # Be verbose when runing under a CI context
 CI_RUN = (
     os.environ.get("JENKINS_URL")
@@ -32,7 +32,7 @@ os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
 # Global Path Definitions
 REPO_ROOT = pathlib.Path(__file__).resolve().parent
 # Change current directory to REPO_ROOT
-os.chdir(REPO_ROOT)
+os.chdir(str(REPO_ROOT))
 
 # Coverage site customize
 SITECUSTOMIZE_DIR = str(REPO_ROOT / "tests" / "support" / "coverage")
@@ -68,8 +68,8 @@ def _get_session_python_version_info(session):
 
 def _get_pydir(session):
     version_info = _get_session_python_version_info(session)
-    if version_info < (3, 6):
-        session.error("Only Python >= 3.6 is supported")
+    if version_info < (3, 5):
+        session.error("Only Python >= 3.5 is supported")
     return "py{}.{}".format(*version_info)
 
 
@@ -131,10 +131,10 @@ def tests(session):
     args = [
         "--rootdir",
         str(REPO_ROOT),
-        f"--log-file={RUNTESTS_LOGFILE}",
+        "--log-file={}".format(RUNTESTS_LOGFILE),
         "--log-file-level=debug",
         "--show-capture=no",
-        f"--junitxml={JUNIT_REPORT}",
+        "--junitxml={}".format(JUNIT_REPORT),
         "--showlocals",
         "-ra",
         "-s",
@@ -151,7 +151,7 @@ def tests(session):
         for arg in session.posargs:
             if arg.startswith("-"):
                 continue
-            if arg.startswith(f"tests{os.sep}"):
+            if arg.startswith("tests{}".format(os.sep)):
                 break
             try:
                 pathlib.Path(arg).resolve().relative_to(REPO_ROOT / "tests")
