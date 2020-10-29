@@ -14,6 +14,8 @@ from contextlib import contextmanager
 import attr
 import pytest
 
+from declarative_requirements import __version__
+
 CODE_ROOT = pathlib.Path(__file__).resolve().parent.parent
 
 log = logging.getLogger(__name__)
@@ -32,7 +34,7 @@ def random_string(prefix, size=6, uppercase=False, lowercase=True, digits=True):
     Returns:
         str: The random string
     """
-    if not any([uppercase, lowercase, digits]):
+    if not any([uppercase, lowercase, digits]):  # pragma: no cover
         raise RuntimeError(
             "At least one of 'uppercase', 'lowercase' or 'digits' needs to be true"
         )
@@ -95,7 +97,7 @@ class VirtualEnv:
             cmdline=proc.args,
         )
         log.debug(ret)
-        if check is True:  # pragma: nocover
+        if check is True:  # pragma: no cover
             try:
                 proc.check_returncode()
             except subprocess.CalledProcessError:
@@ -165,7 +167,7 @@ class CommandResult:
     cmdline = attr.ib(default=None, kw_only=True)
 
     @exitcode.validator
-    def _validate_exitcode(self, _, value):
+    def _validate_exitcode(self, _, value):  # pragma: no cover
         if not isinstance(value, int):
             raise ValueError(
                 "'exitcode' needs to be an integer, not '{}'".format(type(value))
@@ -186,7 +188,7 @@ class CommandResult:
         return message + "\n"
 
 
-class CommandFailure(Exception):
+class CommandFailure(Exception):  # pragma: no cover
     """
     Exception raised when a sub-process fails
     """
@@ -241,6 +243,7 @@ class Project:
             stderr=subprocess.PIPE,
             universal_newlines=True,
             check=False,
+            # env={"DISTUTILS_DEBUG": "1"},
         )
         result = CommandResult(
             cmdline=cmdline,
@@ -273,17 +276,35 @@ class Project:
 
             file_path.write_text(file_contents)
 
-    def write_setup(self, install_requires=None, extras_require=None):
+    def write_setup(
+        self,
+        setup_requires=None,
+        install_requires=None,
+        extras_require=None,
+        tests_require=None,
+    ):
         if install_requires is None:
             install_requires = ""
+        else:
+            install_requires = f"\n        install_requires = {install_requires}"
+        if setup_requires is None:
+            setup_requires = ""
+        else:
+            setup_requires = f"\n        setup_requires = {setup_requires}"
+        if tests_require is None:
+            tests_require = ""
+        else:
+            tests_require = f"\n        tests_require = {tests_require}"
         if extras_require is None:
             extras_require = ""
         else:
             _extras_require = ""
             for key, value in extras_require.items():
-                _extras_require += f"""        {key} = "{value}"\n"""
+                _extras_require += f"""          {key} = {value}\n"""
+            if _extras_require:
+                _extras_require = f"""\n        extras_require =\n{_extras_require}\n"""
             extras_require = _extras_require
-        setup_cfg = """
+        setup_cfg = f"""
         [metadata]
         name = test-project
         description = Test project for file support for setuptools declarative setup.cfg
@@ -316,26 +337,24 @@ class Project:
         install_requires =
           setuptools
           setuptools_declarative_requirements
+
+        [requirements-files]{setup_requires}{install_requires}{tests_require}{extras_require}
         """
         self.write_file("setup.cfg", contents=setup_cfg)
         setup = """
-        import os
-        import pathlib
         import setuptools
-        os.chdir(pathlib.Path(__file__).parent)
         if __name__ == "__main__":
             setuptools.setup()
         """
         self.write_file("setup.py", contents=setup)
         pyproject = f"""
         [build-system]
-        requires = ["setuptools>=42", "wheel", "setuptools_declarative_requirements"]
+        requires = [
+            "setuptools>=42",
+            "wheel",
+            "setuptools_declarative_requirements=={__version__}"
+        ]
         build-backend = "setuptools.build_meta"
-
-        [requirements]
-        install_requires = "{install_requires or ""}"
-        [requirements.extras_require]
-{extras_require}
         """
         self.write_file("pyproject.toml", contents=pyproject)
         manifest = """
@@ -343,9 +362,18 @@ class Project:
         """
         self.write_file("MANIFEST.in", contents=manifest)
 
-    def create_pkg_tree(self, install_requires=None, extras_require=None):
+    def create_pkg_tree(
+        self,
+        setup_requires=None,
+        install_requires=None,
+        extras_require=None,
+        tests_require=None,
+    ):
         self.write_setup(
-            install_requires=install_requires, extras_require=extras_require
+            setup_requires=setup_requires,
+            install_requires=install_requires,
+            extras_require=extras_require,
+            tests_require=tests_require,
         )
         self.write_file("tpkg/__init__.py")
 
@@ -365,9 +393,72 @@ class Project:
 
 
 @pytest.fixture(scope="session")
-def serve_declarative_requirements():
-    subprocess.run([sys.executable, "setup.py", "bdist_wheel"])
-    proc = subprocess.Popen(["pypi-server", "-p", "8080", str(CODE_ROOT / "dist")])
+def local_pypi_repo_path(tmp_path_factory):
+    yield tmp_path_factory.mktemp("pypi-pkgs")
+
+
+@pytest.fixture(scope="session")
+def build_test_pkgs(tmp_path_factory, local_pypi_repo_path):
+    # Build this project's whell
+    subprocess.run([sys.executable, "setup.py", "bdist_wheel"], cwd=CODE_ROOT)
+    for pkg in CODE_ROOT.joinpath("dist").glob("*.*"):
+        shutil.copyfile(pkg, local_pypi_repo_path.joinpath(pkg.name))
+
+    # Build the test project's wheel's
+    setup_py = textwrap.dedent(
+        """\
+        import setuptools
+        if __name__ == "__main__":
+            setuptools.setup()
+        """
+    )
+    pyproject_toml = textwrap.dedent(
+        """\
+        [build-system]
+        requires = ["setuptools>=42", "wheel"]
+        build-backend = "setuptools.build_meta"
+        """
+    )
+    setup_cfg_tpl = textwrap.dedent(
+        """\
+        [metadata]
+        name = {name}
+        version = 1.0.0
+        description = Test project for file support for setuptools declarative setup.cfg
+        author = Pedro Algarvio
+        author_email = pedro@algarvio.me
+        license = Apache Software License 2.0
+
+        [options]
+        zip_safe = False
+        include_package_data = True
+        packages = find:
+        """
+    )
+    for name in (
+        "setup-requires",
+        "install-requires",
+        "docs-extras-require",
+        "cli-extras-require",
+        "tests-require",
+    ):
+        src = tmp_path_factory.mktemp(f"{name}-pkg")
+        src.joinpath("setup.py").write_text(setup_py)
+        src.joinpath("pyproject.toml").write_text(pyproject_toml)
+        src.joinpath("setup.cfg").write_text(setup_cfg_tpl.format(name=f"{name}-pkg"))
+        pkg = src / f"{name.replace('-', '_')}_pkg"
+        pkg.mkdir()
+        pkg.joinpath("__init__.py").touch()
+        subprocess.run(
+            [sys.executable, "setup.py", "bdist_wheel"], cwd=str(src), check=True
+        )
+        for pkg in src.joinpath("dist").glob("*.*"):
+            shutil.copyfile(pkg, local_pypi_repo_path.joinpath(pkg.name))
+
+
+@pytest.fixture(scope="session")
+def pypi_server(local_pypi_repo_path, build_test_pkgs):
+    proc = subprocess.Popen(["pypi-server", "-p", "8080", str(local_pypi_repo_path)])
     os.environ["PIP_EXTRA_INDEX_URL"] = "http://localhost:8080"
     try:
         yield
@@ -378,7 +469,7 @@ def serve_declarative_requirements():
 
 
 @pytest.fixture
-def project(tmp_path, serve_declarative_requirements):
+def project(tmp_path, pypi_server):
     _cwd = tmp_path / "cwd"
     _cwd.mkdir()
     return Project(_cwd)

@@ -1,4 +1,4 @@
-# setuptools-declarative-requirements
+# Declarative `setuptools` Config Requirements Files Support
 
 This projects adds the ability for projects using setuptools declarative configuration
 to specify requirements using requirements files.
@@ -8,19 +8,16 @@ to specify requirements using requirements files.
 Anyway, if you know what you're doing, then this library solves the missing feature of defining requirements using requirements files.
 
 ## Setup
-Your ``pyproject.toml`` should look like:
+Your `setup.cfg` should include a section named `requirements-files` like:
 
-```toml
-[build-system]
-requires = ["setuptools>=42", "wheel", "setuptools_declarative_requirements"]
-build-backend = "setuptools.build_meta"
-
-[requirements]
-install_requires = "requirements/base.txt"
-tests_require = "requirements/tests.txt"
-[requirements.extras_require]
-docs = "requirements/docs.txt"
-web = "requirements/web.txt"
+```ini
+[requirements-files]
+setup_requires = requirements/setup.txt
+install_requires = requirements/base.txt
+tests_require = requirements/tests.txt
+extras_require =
+  docs = requirements/docs.txt
+  cli = requirements/cli.txt
 ```
 
 ### ⚠ This project makes no attempt to validate your requirements files.

@@ -1,6 +1,6 @@
 try:
     from .version import __version__
-except ImportError:  # pragma: nocover
+except ImportError:  # pragma: no cover
     from pkg_resources import get_distribution, DistributionNotFound
 
     try:

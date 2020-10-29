@@ -130,3 +130,6 @@ dmypy.json
 
 # Ignore the setuptools_scm generated version file
 declarative_requirements/version.py
+
+# Ignore test run artifacts
+artifacts/

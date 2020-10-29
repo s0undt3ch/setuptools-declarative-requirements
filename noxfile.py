@@ -79,7 +79,6 @@ def tests(session):
         # Always have the wheel package installed
         session.install("wheel", silent=PIP_INSTALL_SILENT)
         session.install(COVERAGE_VERSION_REQUIREMENT, silent=PIP_INSTALL_SILENT)
-        session.install("-e", ".", silent=PIP_INSTALL_SILENT)
 
         # Install requirements
         requirements_file = (
@@ -104,6 +103,8 @@ def tests(session):
                 req.strip() for req in EXTRA_REQUIREMENTS_INSTALL.split()
             ]
             session.install(*install_command, silent=PIP_INSTALL_SILENT)
+
+        session.install("-e", ".", silent=PIP_INSTALL_SILENT)
 
     session.run("coverage", "erase")
 
