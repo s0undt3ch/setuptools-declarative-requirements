@@ -9,7 +9,7 @@ Anyway, if you know what you're doing, then this library solves the missing feat
 of defining requirements using requirements files.
 
 ## `setup.cfg`
-Your `setup.cfg` should include a section named `requirements-files` like:
+Your `setup.cfg` should include a section named `requirements-files`, like:
 
 ```ini
 [requirements-files]
@@ -22,7 +22,7 @@ extras_require =
 ```
 
 ## `pyproject.toml`
-You `pyproject.toml` should also include `setuptools-declarative-requirements`:
+Your `pyproject.toml` should also include `setuptools-declarative-requirements`:
 ```toml
 [build-system]
 requires = ["setuptools>=50.3.2", "wheel", "setuptools-declarative-requirements"]
@@ -39,7 +39,7 @@ if __name__ == "__main__":
     setuptools.setup()
 ```
 
-If this is your case your `setup.cfg` needs an extra bit of tweak. Make sure you have
+If this is your case, your `setup.cfg` needs an extra bit of tweak. Make sure you have
 ``setuptools-declarative-requirements`` in your `setup_requires`:
 ```ini
 [options]
