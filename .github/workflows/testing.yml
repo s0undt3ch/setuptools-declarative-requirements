@@ -135,6 +135,7 @@ jobs:
       with:
         name: runtests-${{ runner.os }}-py${{ matrix.python-version }}.log
         path: artifacts/runtests-*.log
+        retention-days: 15
 
   Windows:
     runs-on: windows-latest
@@ -256,6 +257,7 @@ jobs:
       with:
         name: runtests-${{ runner.os }}-py${{ matrix.python-version }}.log
         path: artifacts/runtests-*.log
+        retention-days: 15
 
   macOS:
     runs-on: macOS-latest
@@ -373,3 +375,4 @@ jobs:
       with:
         name: runtests-${{ runner.os }}-py${{ matrix.python-version }}.log
         path: artifacts/runtests-*.log
+        retention-days: 15
