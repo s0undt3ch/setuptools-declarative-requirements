@@ -1,7 +1,8 @@
 import pathlib
 import sys
-from distutils import log
 from functools import wraps
+
+from distutils import log
 
 
 def _parse_requirements_file(requirements_file):
@@ -81,9 +82,9 @@ def load_declarative_requirements_files(func, dist):
                             line.strip(),
                         )
                         sys.exit(1)
-                    extras_key, extras_requirements_file = [
+                    extras_key, extras_requirements_file = (
                         part.strip() for part in line.split("=")
-                    ]
+                    )
                     if extras_key not in extras_require:
                         extras_require[extras_key] = []
                     extras_require[extras_key].extend(
