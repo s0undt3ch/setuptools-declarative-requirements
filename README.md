@@ -21,6 +21,11 @@ extras_require =
   cli = requirements/cli.txt
 ```
 
+### ⚠ ATTENTION
+
+#### The requirements files **MUST** be included in the wheel file aswell as the source tarball
+
+
 ## `pyproject.toml`
 Your `pyproject.toml` should also include `setuptools-declarative-requirements`:
 ```toml
