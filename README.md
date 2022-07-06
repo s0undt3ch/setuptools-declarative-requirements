@@ -29,7 +29,7 @@ For the example shown above, in ``setup.cfg``, add something like:
 
 ```ini
 [options.data_files]
-. = requirements.txt
+. = requirements/*.txt
 ```
 
 Or something like the folowing on your ``MANIFEST.in``:
