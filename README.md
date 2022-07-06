@@ -25,14 +25,21 @@ extras_require =
 
 #### The requirements files **MUST** be included in the wheel file aswell as the source tarball
 
-For the example shown above, something like the folowing on your ``MANIFEST.in``:
+For the example shown above, in ``setup.cfg``, add something like:
+
+```ini
+[options.data_files]
+. = requirements.txt
+```
+
+Or something like the folowing on your ``MANIFEST.in``:
 
 ```
 include requirements/*.txt
 ```
 
 Or, if you use [setuptools-scm](https://pypi.org/project/setuptools-scm), the requirements files
-need to be checked in to the SCM repo.
+need to be committed to the SCM repo.
 
 
 ## `pyproject.toml`
