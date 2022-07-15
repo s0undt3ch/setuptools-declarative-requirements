@@ -15,7 +15,7 @@ def _parse_requirements_file(requirements_file):
     parsed_requirements = []
     for line in requirements_file.read_text().splitlines():
         line = line.strip()
-        if not line or line.startswith(("#", "-r", "--")):
+        if not line or line.startswith(("#", "-i", "-r", "--")):
             continue
         parsed_requirements.append(line)
     log.info(
