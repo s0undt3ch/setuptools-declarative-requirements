@@ -40,7 +40,7 @@ pyparsing==2.4.7
     # via packaging
 pypiserver==1.4.2
     # via -r requirements/tests.in
-pytest-helpers-namespace==2021.12.29
+pytest-helpers-namespace==2021.4.29
     # via pytest-shell-utilities
 pytest-shell-utilities==1.6.0
     # via -r requirements/tests.in
