@@ -1,8 +1,9 @@
 name: Release
 
 on:
-  release:
-    types: [created]
+  push:
+    tags:
+      - "*"
 
 jobs:
   Publish:
@@ -28,3 +29,12 @@ jobs:
         user: __token__
         password: ${{ secrets.PYPI_TOKEN }}
         print_hash: true
+
+    - name: Create Github Release
+      uses: "marvinpinto/action-automatic-releases@latest"
+      with:
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        prerelease: false
+        files: |
+          dist/*
+          LICENSE
