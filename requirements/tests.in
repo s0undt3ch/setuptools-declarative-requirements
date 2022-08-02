@@ -1,2 +1,3 @@
 pytest
 pypiserver
+pytest-shell-utilities
