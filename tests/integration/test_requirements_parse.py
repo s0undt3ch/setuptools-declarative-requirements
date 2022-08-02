@@ -23,13 +23,13 @@ def project(project):
 @pytest.mark.parametrize("build", ["sdist", "bdist_wheel"])
 def test_build_package(project, build):
     ret = project.sys_exec_run("setup.py", build)
-    assert ret.exitcode == 0
+    assert ret.returncode == 0
     package = project.get_generated_dist()
     with project.virtualenv() as venv:
         installed_packages = venv.get_installed_packages()
         assert "install-requires-pkg" not in installed_packages
         ret = venv.install(str(package))
-        assert ret.exitcode == 0, ret
+        assert ret.returncode == 0, ret
         installed_packages = venv.get_installed_packages()
         assert "install-requires-pkg" in installed_packages
 
@@ -37,7 +37,7 @@ def test_build_package(project, build):
         installed_packages = venv.get_installed_packages()
         assert "docs-extras-require-pkg" not in installed_packages
         ret = venv.install("{}[docs]".format(package))
-        assert ret.exitcode == 0, ret
+        assert ret.returncode == 0, ret
         installed_packages = venv.get_installed_packages()
         assert "docs-extras-require-pkg" in installed_packages
 
@@ -46,5 +46,5 @@ def test_build_package(project, build):
         assert "cli-extras-require-pkg" not in installed_packages
         ret = venv.install("{}[cli]".format(package))
         installed_packages = venv.get_installed_packages()
-        assert ret.exitcode == 0, ret
+        assert ret.returncode == 0, ret
         assert "cli-extras-require-pkg" in installed_packages

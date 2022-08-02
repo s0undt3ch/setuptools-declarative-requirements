@@ -1,18 +1,19 @@
-import json
 import logging
 import os
 import pathlib
+import pprint
 import random
 import shutil
 import string
 import subprocess
 import sys
 import textwrap
-import traceback
 from contextlib import contextmanager
 
 import attr
 import pytest
+from pytestshellutils.shell import Subprocess
+from pytestshellutils.utils import ports
 
 from declarative_requirements import __version__
 
@@ -52,6 +53,7 @@ def random_string(prefix, size=6, uppercase=False, lowercase=True, digits=True):
 @attr.s
 class VirtualEnv:
 
+    env = attr.ib()
     venv_dir = attr.ib()
     venv_python = attr.ib(init=False)
 
@@ -83,37 +85,18 @@ class VirtualEnv:
     def install(self, *args, **kwargs):
         return self.run(str(self.venv_python), "-m", "pip", "install", *args, **kwargs)
 
-    def run(self, *args, **kwargs):
-        check = kwargs.pop("check", True)
-        kwargs.setdefault("cwd", str(self.venv_dir))
-        kwargs.setdefault("stdout", subprocess.PIPE)
-        kwargs.setdefault("stderr", subprocess.PIPE)
-        kwargs.setdefault("universal_newlines", True),
-        proc = subprocess.run(args, check=False, **kwargs)
-        ret = CommandResult(
-            exitcode=proc.returncode,
-            stdout=proc.stdout,
-            stderr=proc.stderr,
-            cmdline=proc.args,
-        )
-        log.debug(ret)
-        if check is True:  # pragma: no cover
-            try:
-                proc.check_returncode()
-            except subprocess.CalledProcessError:
-                raise CommandFailure(
-                    "Command failed return code check",
-                    cmdline=proc.args,
-                    stdout=proc.stdout,
-                    stderr=proc.stderr,
-                    exitcode=proc.returncode,
-                )
-        return ret
+    def run(self, *cmdline, cwd=None, env=None):
+        if cwd is None:
+            cwd = str(self.venv_dir)
+        if env is None:
+            env = {}
+        env.update(self.env)
+        return Subprocess(cwd=cwd, environ=env).run(*cmdline)
 
     def get_installed_packages(self):
         ret = self.run(str(self.venv_python), "-m", "pip", "list", "--format", "json")
         pkgs = {}
-        for entry in json.loads(ret.stdout):
+        for entry in ret.data:
             pkgs[entry["name"].lower()] = entry
         return pkgs
 
@@ -153,121 +136,26 @@ class VirtualEnv:
             return sys.executable
 
     def _create_virtualenv(self):
-        self.run("virtualenv", "--python", self._get_real_python(), str(self.venv_dir))
-
-
-@attr.s(frozen=True)
-class CommandResult:
-    """
-    This class serves the purpose of having a common result class which will hold the
-    resulting data from a subprocess command.
-    """
-
-    exitcode = attr.ib()
-    stdout = attr.ib()
-    stderr = attr.ib()
-    cmdline = attr.ib(default=None, kw_only=True)
-
-    @exitcode.validator
-    def _validate_exitcode(self, _, value):  # pragma: no cover
-        if not isinstance(value, int):
-            raise ValueError(
-                "'exitcode' needs to be an integer, not '{}'".format(type(value))
-            )
-
-    def __str__(self):
-        message = self.__class__.__name__
-        if self.cmdline:
-            message += "\n Command Line: {}".format(self.cmdline)
-        if self.exitcode is not None:
-            message += "\n Exitcode: {}".format(self.exitcode)
-        if self.stdout or self.stderr:
-            message += "\n Process Output:"
-        if self.stdout:
-            message += "\n   >>>>> STDOUT >>>>>\n{}\n   <<<<< STDOUT <<<<<".format(
-                self.stdout
-            )
-        if self.stderr:
-            message += "\n   >>>>> STDERR >>>>>\n{}\n   <<<<< STDERR <<<<<".format(
-                self.stderr
-            )
-        return message + "\n"
-
-
-class CommandFailure(Exception):  # pragma: no cover
-    """
-    Exception raised when a sub-process fails
-    """
-
-    def __init__(
-        self, message, cmdline=None, stdout=None, stderr=None, exitcode=None, exc=None
-    ):
-        super().__init__()
-        self.message = message
-        self.cmdline = cmdline
-        self.stdout = stdout
-        self.stderr = stderr
-        self.exitcode = exitcode
-        self.exc = exc
-
-    def __str__(self):
-        message = self.message
-        append_new_line = False
-        if self.cmdline:
-            message += "\n Command Line: {}".format(self.cmdline)
-            append_new_line = True
-        if self.exitcode is not None:
-            append_new_line = True
-            message += "\n Exitcode: {}".format(self.exitcode)
-        if self.stdout or self.stderr:
-            append_new_line = True
-            message += "\n Process Output:"
-        if self.stdout:
-            message += "\n   >>>>> STDOUT >>>>>\n{}\n   <<<<< STDOUT <<<<<".format(
-                self.stdout
-            )
-        if self.stderr:
-            message += "\n   >>>>> STDERR >>>>>\n{}\n   <<<<< STDERR <<<<<".format(
-                self.stderr
-            )
-        if self.exc:
-            append_new_line = True
-            message += "\n{}".format(
-                "".join(traceback.format_exception(*self.exc)).rstrip()
-            )
-        if append_new_line:
-            message += "\n"
-        return message
+        virtualenv = shutil.which("virtualenv")
+        if virtualenv is None:
+            pytest.fail("The 'virtualenv' binary was not found")
+        self.run(virtualenv, "--python", self._get_real_python(), str(self.venv_dir))
 
 
 @attr.s(frozen=True)
 class Project:
 
     cwd = attr.ib()
+    env = attr.ib()
 
-    def run(self, *cmdline, check=False):
-        proc = subprocess.run(
-            cmdline,
-            cwd=str(self.cwd),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            universal_newlines=True,
-            check=False,
-            # env={"DISTUTILS_DEBUG": "1"},
-        )
-        result = CommandResult(
-            cmdline=cmdline,
-            stdout=proc.stdout,
-            stderr=proc.stderr,
-            exitcode=proc.returncode,
-        )
-        log.debug(result)
-        if check is True:
-            proc.check_returncode()
-        return result
+    def run(self, *cmdline, env=None):
+        if env is None:
+            env = {}
+        env.update(self.env)
+        return Subprocess(cwd=self.cwd, environ=env).run(*cmdline)
 
-    def sys_exec_run(self, *cmdline, check=False):
-        return self.run(sys.executable, *cmdline, check=check)
+    def sys_exec_run(self, *cmdline):
+        return self.run(sys.executable, *cmdline)
 
     def write_file(self, path, contents=None, strip_first_newline=True):
         file_path = self.cwd.joinpath(path)
@@ -410,7 +298,7 @@ class Project:
 
     @contextmanager
     def virtualenv(self):
-        with VirtualEnv(self.cwd) as venv:
+        with VirtualEnv(venv_dir=self.cwd, env=self.env) as venv:
             yield venv
 
 
@@ -481,19 +369,36 @@ def build_test_pkgs(tmp_path_factory, local_pypi_repo_path):
 
 
 @pytest.fixture(scope="session")
-def pypi_server(local_pypi_repo_path, build_test_pkgs):
-    proc = subprocess.Popen(["pypi-server", "-p", "8080", str(local_pypi_repo_path)])
-    os.environ["PIP_EXTRA_INDEX_URL"] = "http://localhost:8080"
+def pypi_server_port():
+    return ports.get_unused_localhost_port()
+
+
+@pytest.fixture(scope="session")
+def environ(pypi_server_port):
+    return {
+        "PIP_DISABLE_PIP_VERSION_CHECK": "1",
+        "PIP_EXTRA_INDEX_URL": "http://localhost:{}".format(pypi_server_port),
+    }
+
+
+@pytest.fixture(scope="session")
+def pypi_server(local_pypi_repo_path, build_test_pkgs, pypi_server_port):
+    log.debug(
+        "Local PyPi Server Directory Contents:\n%s",
+        pprint.pformat(list(local_pypi_repo_path.glob("*"))),
+    )
+    proc = subprocess.Popen(
+        ["pypi-server", "-p", str(pypi_server_port), str(local_pypi_repo_path)]
+    )
     try:
         yield
     finally:
-        os.environ.pop("PIP_EXTRA_INDEX_URL")
         with proc:
             proc.terminate()
 
 
 @pytest.fixture
-def project(tmp_path, pypi_server):
+def project(tmp_path, pypi_server, environ):
     _cwd = tmp_path / "cwd"
     _cwd.mkdir()
-    return Project(_cwd)
+    return Project(cwd=_cwd, env=environ)
