@@ -1,3 +1,4 @@
 pytest
 pypiserver
 pytest-shell-utilities
+virtualenv

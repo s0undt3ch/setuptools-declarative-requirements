@@ -9,12 +9,18 @@ attrs==20.2.0
     #   pytest
     #   pytest-shell-utilities
     #   pytest-skip-markers
+distlib==0.3.5
+    # via virtualenv
 distro==1.7.0
     # via pytest-skip-markers
+filelock==3.7.1
+    # via virtualenv
 iniconfig==1.1.1
     # via pytest
 packaging==20.4
     # via pytest
+platformdirs==2.5.2
+    # via virtualenv
 pluggy==0.13.1
     # via pytest
 psutil==5.9.1
@@ -43,3 +49,5 @@ toml==0.10.1
     # via pytest
 typing-extensions==4.3.0
     # via pytest-shell-utilities
+virtualenv==20.16.2
+    # via -r requirements/tests.in
