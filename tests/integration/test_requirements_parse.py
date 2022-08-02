@@ -2,9 +2,27 @@ import pytest
 
 
 @pytest.fixture
-def project(project):
-    project.write_file("requirements/setup.txt", contents="setup-requires-pkg")
-    project.write_file("requirements/base.txt", contents="install-requires-pkg")
+def project(project, pypi_server_port):
+    project.write_file(
+        "requirements/setup.txt",
+        contents="""
+        -i http://localhost:{}
+
+        setup-requires-pkg
+        """.format(
+            pypi_server_port
+        ),
+    )
+    project.write_file(
+        "requirements/base.txt",
+        contents="""
+        --index-url=http://localhost:{}
+
+        install-requires-pkg
+        """.format(
+            pypi_server_port
+        ),
+    )
     project.write_file("requirements/docs.txt", contents="docs-extras-require-pkg")
     project.write_file("requirements/cli.txt", contents="cli-extras-require-pkg")
     project.write_file("requirements/tests.txt", contents="tests-require-pkg")
