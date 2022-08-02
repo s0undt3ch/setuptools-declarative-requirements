@@ -89,7 +89,7 @@ class VirtualEnv:
         if cwd is None:
             cwd = str(self.venv_dir)
         if env is None:
-            env = {}
+            env = os.environ.copy()
         env.update(self.env)
         return Subprocess(cwd=cwd, environ=env).run(*cmdline)
 
@@ -150,7 +150,7 @@ class Project:
 
     def run(self, *cmdline, env=None):
         if env is None:
-            env = {}
+            env = os.environ.copy()
         env.update(self.env)
         return Subprocess(cwd=self.cwd, environ=env).run(*cmdline)
 
