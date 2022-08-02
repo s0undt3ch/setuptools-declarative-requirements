@@ -1,4 +1,4 @@
-name: Testing
+name: CI
 
 on: [push, pull_request]
 
@@ -393,21 +393,62 @@ jobs:
     - uses: actions/checkout@v3
       with:
         fetch-depth: 0
+
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: 3.9
+
     - name: Install Nox
       run: |
         python -m pip install nox
+
     - name: Build a binary wheel and a source tarball
       run: |
         nox -e build
+
+    - name: Upload Artifact
+      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && github.repository == 's0undt3ch/setuptools-declarative-requirements'
+      uses: actions/upload-artifact@v3
+      with:
+        name: packages
+        path: dist/
+        if-no-files-found: error
+
+  Release:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && github.repository == 's0undt3ch/setuptools-declarative-requirements'
+    needs:
+      - Build
+
+    steps:
+    - name: Download Artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: packages
+        path: dist/*
+
     - name: Publish distribution 📦 to Test PyPI
-      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         user: __token__
         password: ${{ secrets.TEST_PYPI_TOKEN }}
         repository_url: https://test.pypi.org/legacy/
         print_hash: true
+
+    - name: Publish distribution 📦 to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        user: __token__
+        password: ${{ secrets.PYPI_TOKEN }}
+        print_hash: true
+
+    - name: Create Github Release
+      uses: "marvinpinto/action-automatic-releases@latest"
+      with:
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        prerelease: ${{ contains(github.ref, 'rc') }}
+        files: |
+          dist/*
+          LICENSE
