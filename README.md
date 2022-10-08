@@ -46,7 +46,7 @@ need to be committed to the SCM repo.
 Your `pyproject.toml` should also include `setuptools-declarative-requirements`:
 ```toml
 [build-system]
-requires = ["setuptools>=50.3.2", "wheel", "setuptools-declarative-requirements"]
+requires = ["setuptools>=50.3.2", "setuptools-declarative-requirements"]
 build-backend = "setuptools.build_meta"
 ```
 

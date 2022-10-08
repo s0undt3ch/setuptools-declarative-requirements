@@ -259,7 +259,6 @@ class Project:
         [build-system]
         requires = [
             "setuptools>=42",
-            "wheel",
             "setuptools_declarative_requirements=={__version__}"
         ]
         build-backend = "setuptools.build_meta"
@@ -325,7 +324,7 @@ def build_test_pkgs(tmp_path_factory, local_pypi_repo_path):
     pyproject_toml = textwrap.dedent(
         """\
         [build-system]
-        requires = ["setuptools>=42", "wheel"]
+        requires = ["setuptools>=42"]
         build-backend = "setuptools.build_meta"
         """
     )
