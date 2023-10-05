@@ -40,7 +40,6 @@ def load_declarative_requirements_files(func, dist):
         # Load the declarative requirements files config
         requirements = dist.command_options.get("requirements-files")
         if not requirements:
-            log.info("No 'requirements-files' section was found. Nothing to do.")
             return
 
         supported_config_keys = (
