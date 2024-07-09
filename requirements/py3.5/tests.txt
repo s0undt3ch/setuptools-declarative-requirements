@@ -63,7 +63,7 @@ typing-extensions==3.10.0.2
     # via pytest-shell-utilities
 virtualenv==20.15.1
     # via -r requirements/tests.in
-zipp==1.2.0
+zipp==3.19.1
     # via
     #   importlib-metadata
     #   importlib-resources
